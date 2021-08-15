@@ -20,6 +20,8 @@
 #include <pcl_conversions/pcl_conversions.h>
 #include <pcl_ros/transforms.h>
 
+#include <fast_gicp/gicp/fast_gicp.hpp>
+
 class ICPLocalization
 {
   using PointType = pcl::PointXYZ;
@@ -56,7 +58,7 @@ private:
   ros::Publisher icp_pose_publisher_;
 
   // icp
-  boost::shared_ptr<pcl::GeneralizedIterativeClosestPoint<PointType, PointType>> icp_;
+  boost::shared_ptr<pcl::Registration<PointType, PointType>> registration_;
 
   geometry_msgs::Pose initial_pose_;
 

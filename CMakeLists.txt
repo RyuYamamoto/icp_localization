@@ -5,7 +5,7 @@ add_compile_options(-std=c++11)
 
 find_package(catkin REQUIRED COMPONENTS
   geometry_msgs
-  ndt_omp
+  fast_gicp
   roscpp
   sensor_msgs
   std_msgs

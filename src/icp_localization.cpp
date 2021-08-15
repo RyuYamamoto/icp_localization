@@ -11,18 +11,29 @@ ICPLocalization::ICPLocalization()
   pnh_.param<double>("transformation_epsilon", transformation_epsilon_, 0.01);
   pnh_.param<double>("max_correspondence_distance", max_correspondence_distance_, 1.0);
   pnh_.param<double>("euclidean_fitness_epsilon", euclidean_fitness_epsilon_, 0.1);
-  pnh_.param<double>("ransac_outlier_rejection_threshold", ransac_outlier_rejection_threshold_, 1.0);
+  pnh_.param<double>(
+    "ransac_outlier_rejection_threshold", ransac_outlier_rejection_threshold_, 1.0);
   pnh_.param<int>("max_iteration", max_iteration_, 20);
   pnh_.param<std::string>("map_frame_id", map_frame_id_, "map");
   pnh_.param<std::string>("base_frame_id", base_frame_id_, "base_link");
 
-  icp_.reset(new pcl::GeneralizedIterativeClosestPoint<PointType, PointType>);
-
-  icp_->setMaximumIterations(max_iteration_);
-  icp_->setTransformationEpsilon(transformation_epsilon_);
-  icp_->setMaxCorrespondenceDistance(max_correspondence_distance_);
-  icp_->setEuclideanFitnessEpsilon(euclidean_fitness_epsilon_);
-  icp_->setRANSACOutlierRejectionThreshold(ransac_outlier_rejection_threshold_);
+  const std::string registration_type = pnh_.param<std::string>("registration_type", "FAST_GICP");
+  if (registration_type == "FAST_GICP") {
+    boost::shared_ptr<fast_gicp::FastGICP<PointType, PointType>> fast_gicp(
+      new fast_gicp::FastGICP<PointType, PointType>);
+    const int num_thread = pnh_.param<int>("gicp_num_thread", 0);
+    if (0 < num_thread) fast_gicp->setNumThreads(num_thread);
+    registration_ = fast_gicp;
+  } else {
+    boost::shared_ptr<pcl::GeneralizedIterativeClosestPoint<PointType, PointType>> gicp(
+      new pcl::GeneralizedIterativeClosestPoint<PointType, PointType>);
+    registration_ = gicp;
+  }
+  registration_->setMaximumIterations(max_iteration_);
+  registration_->setTransformationEpsilon(transformation_epsilon_);
+  registration_->setMaxCorrespondenceDistance(max_correspondence_distance_);
+  registration_->setEuclideanFitnessEpsilon(euclidean_fitness_epsilon_);
+  registration_->setRANSACOutlierRejectionThreshold(ransac_outlier_rejection_threshold_);
 
   map_subscriber_ = pnh_.subscribe("points_map", 1, &ICPLocalization::mapCallback, this);
   points_subscriber_ = pnh_.subscribe("points_raw", 1, &ICPLocalization::pointsCallback, this);
@@ -60,12 +71,12 @@ void ICPLocalization::mapCallback(const sensor_msgs::PointCloud2 & map)
   pcl::PointCloud<PointType>::Ptr map_cloud(new pcl::PointCloud<PointType>);
   pcl::fromROSMsg(map, *map_cloud);
 
-  icp_->setInputTarget(map_cloud);
+  registration_->setInputTarget(map_cloud);
 }
 
 void ICPLocalization::pointsCallback(const sensor_msgs::PointCloud2 & points)
 {
-  if (icp_->getInputTarget() == nullptr) {
+  if (registration_->getInputTarget() == nullptr) {
     ROS_ERROR("map not received!");
     return;
   }
@@ -112,7 +123,7 @@ void ICPLocalization::pointsCallback(const sensor_msgs::PointCloud2 & points)
   const Eigen::Matrix4f base_to_sensor_frame_matrix =
     base_to_sensor_frame_affine.matrix().cast<float>();
   pcl::transformPointCloud(*crop_cloud, *transform_cloud_ptr, base_to_sensor_frame_matrix);
-  icp_->setInputSource(transform_cloud_ptr);
+  registration_->setInputSource(transform_cloud_ptr);
 
   // calculation initial pose for icp
   Eigen::Matrix4f init_guess = Eigen::Matrix4f::Identity();
@@ -121,11 +132,11 @@ void ICPLocalization::pointsCallback(const sensor_msgs::PointCloud2 & points)
   init_guess = initial_pose_affine.matrix().cast<float>();
 
   pcl::PointCloud<PointType>::Ptr output_cloud(new pcl::PointCloud<PointType>);
-  icp_->align(*output_cloud, init_guess);
+  registration_->align(*output_cloud, init_guess);
 
-  const bool convergenced = icp_->hasConverged();
+  const bool convergenced = registration_->hasConverged();
 
-  const Eigen::Matrix4f result_icp_pose = icp_->getFinalTransformation();
+  const Eigen::Matrix4f result_icp_pose = registration_->getFinalTransformation();
 
   Eigen::Affine3d result_icp_pose_affine;
   result_icp_pose_affine.matrix() = result_icp_pose.cast<double>();
