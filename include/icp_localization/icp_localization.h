@@ -16,7 +16,7 @@
 #include <pcl/io/io.h>
 #include <pcl/io/pcd_io.h>
 #include <pcl/point_types.h>
-#include <pcl/registration/icp.h>
+#include <pcl/registration/gicp.h>
 #include <pcl_conversions/pcl_conversions.h>
 #include <pcl_ros/transforms.h>
 
@@ -56,7 +56,7 @@ private:
   ros::Publisher icp_pose_publisher_;
 
   // icp
-  boost::shared_ptr<pcl::IterativeClosestPoint<PointType, PointType>> icp_;
+  boost::shared_ptr<pcl::GeneralizedIterativeClosestPoint<PointType, PointType>> icp_;
 
   geometry_msgs::Pose initial_pose_;
 

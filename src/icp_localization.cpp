@@ -16,7 +16,7 @@ ICPLocalization::ICPLocalization()
   pnh_.param<std::string>("map_frame_id", map_frame_id_, "map");
   pnh_.param<std::string>("base_frame_id", base_frame_id_, "base_link");
 
-  icp_.reset(new pcl::IterativeClosestPoint<PointType, PointType>);
+  icp_.reset(new pcl::GeneralizedIterativeClosestPoint<PointType, PointType>);
 
   icp_->setMaximumIterations(max_iteration_);
   icp_->setTransformationEpsilon(transformation_epsilon_);
