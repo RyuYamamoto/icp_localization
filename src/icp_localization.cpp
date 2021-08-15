@@ -22,23 +22,18 @@ ICPLocalization::ICPLocalization()
     boost::shared_ptr<fast_gicp::FastGICP<PointType, PointType>> fast_gicp(
       new fast_gicp::FastGICP<PointType, PointType>);
     const int num_thread = pnh_.param<int>("gicp_num_thread", 0);
-    if(0 < num_thread) fast_gicp->setNumThreads(num_thread);
-    fast_gicp->setMaximumIterations(max_iteration_);
-    fast_gicp->setTransformationEpsilon(transformation_epsilon_);
-    fast_gicp->setMaxCorrespondenceDistance(max_correspondence_distance_);
-    fast_gicp->setEuclideanFitnessEpsilon(euclidean_fitness_epsilon_);
-    fast_gicp->setRANSACOutlierRejectionThreshold(ransac_outlier_rejection_threshold_);
+    if (0 < num_thread) fast_gicp->setNumThreads(num_thread);
     registration_ = fast_gicp;
   } else {
     boost::shared_ptr<pcl::GeneralizedIterativeClosestPoint<PointType, PointType>> gicp(
       new pcl::GeneralizedIterativeClosestPoint<PointType, PointType>);
-    gicp->setMaximumIterations(max_iteration_);
-    gicp->setTransformationEpsilon(transformation_epsilon_);
-    gicp->setMaxCorrespondenceDistance(max_correspondence_distance_);
-    gicp->setEuclideanFitnessEpsilon(euclidean_fitness_epsilon_);
-    gicp->setRANSACOutlierRejectionThreshold(ransac_outlier_rejection_threshold_);
     registration_ = gicp;
   }
+  registration_->setMaximumIterations(max_iteration_);
+  registration_->setTransformationEpsilon(transformation_epsilon_);
+  registration_->setMaxCorrespondenceDistance(max_correspondence_distance_);
+  registration_->setEuclideanFitnessEpsilon(euclidean_fitness_epsilon_);
+  registration_->setRANSACOutlierRejectionThreshold(ransac_outlier_rejection_threshold_);
 
   map_subscriber_ = pnh_.subscribe("points_map", 1, &ICPLocalization::mapCallback, this);
   points_subscriber_ = pnh_.subscribe("points_raw", 1, &ICPLocalization::pointsCallback, this);
