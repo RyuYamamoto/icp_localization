@@ -114,7 +114,7 @@ void ICPLocalization::pointsCallback(const sensor_msgs::PointCloud2 & points)
   pcl::transformPointCloud(*crop_cloud, *transform_cloud_ptr, base_to_sensor_frame_matrix);
   icp_->setInputSource(transform_cloud_ptr);
 
-  // calculation initial pose for NDT
+  // calculation initial pose for icp
   Eigen::Matrix4f init_guess = Eigen::Matrix4f::Identity();
   Eigen::Affine3d initial_pose_affine;
   tf2::fromMsg(initial_pose_, initial_pose_affine);
